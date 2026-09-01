@@ -12,6 +12,7 @@
   const LOVE_COOKIE = 'eden_mensaje_amor_visto';
   const LOVE_INTERVAL_DAYS = 7;
   const LOVE_INTERVAL_MS = LOVE_INTERVAL_DAYS * 24 * 60 * 60 * 1000;
+  const PLANTILLA_DESCRIPCION_DEFAULT = 'Servicio de traslado saliendo el día ____ de _________________ del 2026 hacia ___________________ y regresando el día ____ de _________________ del 2026.';
 
   // Estado inicial por defecto
   const defaultState = {
@@ -24,7 +25,7 @@
     items: [
       {
         id: 'item-1',
-        desc: 'Servicio de traslado saliendo el día ____ de _________________ del 2026 hacia ___________________ y regresando el día ____ de _________________ del 2026.',
+        desc: PLANTILLA_DESCRIPCION_DEFAULT,
         neto: 0,
         ivaRate: 0.105,
         total: 0
@@ -86,6 +87,26 @@
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  // Selección automática de campos de guiones bajos (ej: ____) al hacer clic
+  function seleccionarBloqueGuiones(textarea) {
+    if (!textarea) return;
+    const pos = textarea.selectionStart;
+    const texto = textarea.value;
+    const regex = /_{2,}/g;
+    let match;
+    while ((match = regex.exec(texto)) !== null) {
+      const inicio = match.index;
+      const fin = inicio + match[0].length;
+      if (pos >= inicio && pos <= fin) {
+        setTimeout(() => {
+          textarea.setSelectionRange(inicio, fin);
+        }, 10);
+        return true;
+      }
+    }
+    return false;
   }
 
   // =========================================================================
@@ -168,10 +189,17 @@
         card.innerHTML = `
           <div class="item-card-header">
             <span class="item-badge">Renglón #${index + 1}</span>
-            ${appState.items.length > 1 ? `<button type="button" class="btn-icon delete" title="Eliminar renglón" data-action="delete-item" data-id="${item.id}">✕</button>` : ''}
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:11px;" data-action="clear-desc" data-id="${item.id}" title="Vaciar descripción">🧹 Vaciar</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:11px;" data-action="reset-desc-tpl" data-id="${item.id}" title="Restaurar plantilla">📝 Plantilla</button>
+              ${appState.items.length > 1 ? `<button type="button" class="btn-icon delete" title="Eliminar renglón" data-action="delete-item" data-id="${item.id}">✕</button>` : ''}
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Descripción del servicio o tramo</label>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <label class="form-label">Descripción del servicio o tramo</label>
+              <span style="font-size:11px; color:#6b7280;">💡 Tocá en los guiones (___) para escribir directo</span>
+            </div>
             <textarea class="form-textarea item-desc-input" data-id="${item.id}" rows="2" placeholder="Detalle del traslado o servicio...">${escapeHTML(item.desc)}</textarea>
           </div>
           <div class="item-fields-grid">
@@ -383,7 +411,7 @@
       const nuevoId = 'item-' + Date.now();
       appState.items.push({
         id: nuevoId,
-        desc: 'Servicio de traslado...',
+        desc: 'Servicio de traslado saliendo el día ____ hacia ____...',
         neto: 0,
         ivaRate: 0.105,
         total: 0
@@ -420,6 +448,39 @@
         }
       });
 
+      // Detección de clic / toque / foco sobre los guiones bajos (____) para selección instantánea
+      itemsList.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.classList.contains('item-desc-input') || target.classList.contains('condition-input')) {
+          seleccionarBloqueGuiones(target);
+        }
+      });
+
+      itemsList.addEventListener('mouseup', (e) => {
+        const target = e.target;
+        if (target.classList.contains('item-desc-input')) {
+          seleccionarBloqueGuiones(target);
+        }
+      });
+
+      // Tecla TAB para navegar automáticamente al siguiente bloque de guiones
+      itemsList.addEventListener('keydown', (e) => {
+        const target = e.target;
+        if (target.classList.contains('item-desc-input') && e.key === 'Tab' && !e.shiftKey) {
+          const texto = target.value;
+          const pos = target.selectionEnd;
+          const regex = /_{2,}/g;
+          let match;
+          while ((match = regex.exec(texto)) !== null) {
+            if (match.index > pos) {
+              e.preventDefault();
+              target.setSelectionRange(match.index, match.index + match[0].length);
+              return;
+            }
+          }
+        }
+      });
+
       itemsList.addEventListener('change', (e) => {
         const target = e.target;
         const id = target.dataset.id;
@@ -438,9 +499,10 @@
       });
 
       itemsList.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-action="delete-item"]');
-        if (btn) {
-          const id = btn.dataset.id;
+        // Eliminar renglón
+        const btnDel = e.target.closest('[data-action="delete-item"]');
+        if (btnDel) {
+          const id = btnDel.dataset.id;
           if (appState.items.length <= 1) {
             alert('Debe existir al menos un renglón en el presupuesto.');
             return;
@@ -448,6 +510,35 @@
           appState.items = appState.items.filter(i => i.id !== id);
           renderizarTodo();
           mostrarToast('🗑️ Renglón eliminado');
+          return;
+        }
+
+        // Vaciar descripción
+        const btnClear = e.target.closest('[data-action="clear-desc"]');
+        if (btnClear) {
+          const id = btnClear.dataset.id;
+          const item = appState.items.find(i => i.id === id);
+          if (item) {
+            item.desc = '';
+            renderizarTodo();
+            mostrarToast('🧹 Descripción vaciada');
+            const card = itemsList.querySelector(`.item-card:has([data-id="${id}"])`);
+            card?.querySelector('.item-desc-input')?.focus();
+          }
+          return;
+        }
+
+        // Restaurar plantilla
+        const btnResetTpl = e.target.closest('[data-action="reset-desc-tpl"]');
+        if (btnResetTpl) {
+          const id = btnResetTpl.dataset.id;
+          const item = appState.items.find(i => i.id === id);
+          if (item) {
+            item.desc = PLANTILLA_DESCRIPCION_DEFAULT;
+            renderizarTodo();
+            mostrarToast('📝 Plantilla restaurada');
+          }
+          return;
         }
       });
     }
@@ -499,6 +590,11 @@
       });
 
       conditionsList.addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.classList.contains('condition-input')) {
+          seleccionarBloqueGuiones(target);
+        }
+
         const btnBold = e.target.closest('[data-action="toggle-bold"]');
         if (btnBold) {
           const id = btnBold.dataset.id;
