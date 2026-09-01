@@ -985,11 +985,44 @@
     if (modalHelp) modalHelp.hidden = true;
   };
 
+
+  // =========================================================================
+  // GESTIÓN DE TEMA (FONDO BLANCO / NEGRO)
+  // =========================================================================
+  function aplicarTema(tema) {
+    const btn = document.getElementById('btnThemeToggle');
+    if (tema === 'oscuro') {
+      document.body.classList.add('dark-mode');
+      try { localStorage.setItem('eden_tema_color', 'oscuro'); } catch(e) {}
+      if (btn) btn.innerHTML = '☀️ Modo Claro';
+    } else {
+      document.body.classList.remove('dark-mode');
+      try { localStorage.setItem('eden_tema_color', 'claro'); } catch(e) {}
+      if (btn) btn.innerHTML = '🌙 Modo Oscuro';
+    }
+  }
+
+  function inicializarTema() {
+    let temaGuardado = 'claro';
+    try {
+      temaGuardado = localStorage.getItem('eden_tema_color') || 'claro';
+    } catch(e) {}
+    aplicarTema(temaGuardado);
+
+    document.getElementById('btnThemeToggle')?.addEventListener('click', () => {
+      const esOscuro = document.body.classList.contains('dark-mode');
+      const nuevoTema = esOscuro ? 'claro' : 'oscuro';
+      aplicarTema(nuevoTema);
+      mostrarToast(nuevoTema === 'oscuro' ? '🌙 Fondo oscuro activado' : '☀️ Fondo blanco activado');
+    });
+  }
+
   // =========================================================================
   // INICIALIZACIÓN GENERAL
   // =========================================================================
   document.addEventListener('DOMContentLoaded', () => {
     cargarBorradorLocal();
+    inicializarTema();
     inicializarEventos();
     renderizarTodo();
     verificarMensajeAmor();
