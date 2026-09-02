@@ -1,0 +1,784 @@
+/* ==========================================================================
+   EDEN PRESUPUESTOS — Interfaz de la aplicación (todo lo que NO es el documento)
+   ========================================================================== */
+
+:root {
+  --green: #6abf2e;
+  --green-dark: #4d9420;
+  --green-soft: rgba(106, 191, 46, 0.14);
+  --ink: #1d2630;
+  --ink-soft: #5b6672;
+  --line: #dfe4e9;
+  --surface: #ffffff;
+  --surface-2: #f5f7f9;
+  --canvas: #e8ecf0;
+  --danger: #d43b3b;
+  --danger-soft: #fdeaea;
+
+  --radius: 10px;
+  --tap: 44px;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  --shadow-1: 0 1px 2px rgba(16, 24, 32, 0.06);
+  --shadow-2: 0 8px 24px rgba(16, 24, 32, 0.12);
+
+  color-scheme: light;
+}
+
+[data-theme='oscuro'] {
+  --ink: #e7edf3;
+  --ink-soft: #9aa7b4;
+  --line: #2c343d;
+  --surface: #1a1f26;
+  --surface-2: #232a33;
+  --canvas: #10141a;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+button {
+  font: inherit;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 10px 16px;
+  border-radius: 0 0 var(--radius) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ==========================================================================
+   Botones
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.1s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.btn-primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  box-shadow: var(--shadow-1);
+}
+
+.btn-primary:hover {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+
+.btn-ghost {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn-ghost:hover {
+  background: var(--surface-2);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.btn-icon {
+  min-width: var(--tap);
+  padding: 0;
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.btn-icon:hover {
+  background: var(--surface-2);
+}
+
+.btn-sm {
+  min-height: 38px;
+  min-width: 38px;
+  font-size: 13px;
+  padding: 0 12px;
+}
+
+/* ==========================================================================
+   Barra superior
+   ========================================================================== */
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding-top: var(--safe-t);
+}
+
+.app-bar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 7px;
+  padding-left: max(12px, var(--safe-l));
+  padding-right: max(12px, var(--safe-r));
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app-brand-mark {
+  background: var(--green);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 6px 8px;
+  border-radius: 7px;
+}
+
+.app-brand-name {
+  display: none;
+  font-size: clamp(14px, 3.6vw, 16px);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-label {
+  display: none;
+}
+
+.btn-label-short {
+  display: inline;
+}
+
+/* Indicador de autoguardado */
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  min-width: 0;
+}
+
+.save-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #b9c2cb;
+  flex: none;
+  transition: background-color 0.2s ease;
+}
+
+.save-status[data-state='saving'] .save-dot {
+  background: #f0a92b;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.save-status[data-state='saved'] .save-dot {
+  background: var(--green);
+}
+
+.save-status[data-state='error'] .save-dot {
+  background: var(--danger);
+}
+
+.save-text {
+  display: none;
+  white-space: nowrap;
+}
+
+.save-status[data-state='idle'] {
+  opacity: 0.55;
+}
+
+@keyframes pulse {
+  50% { opacity: 0.35; }
+}
+
+/* Menú secundario */
+.app-menu {
+  position: absolute;
+  right: max(12px, var(--safe-r));
+  top: calc(100% + 6px);
+  z-index: 60;
+  min-width: 232px;
+  max-width: calc(100vw - 24px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-menu[hidden] {
+  display: none;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: var(--surface-2);
+  outline: none;
+}
+
+.menu-value {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Aviso de primera vez
+   ========================================================================== */
+
+.edit-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 1240px;
+  width: 100%;
+  margin: 10px auto 0;
+  padding: 10px 12px;
+  padding-left: max(12px, var(--safe-l));
+  padding-right: max(12px, var(--safe-r));
+  background: var(--green-soft);
+  border: 1px solid rgba(106, 191, 46, 0.4);
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.edit-hint[hidden] {
+  display: none;
+}
+
+.edit-hint p {
+  margin: 0;
+  flex: 1;
+}
+
+.edit-hint button {
+  min-width: 34px;
+  min-height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Área de trabajo
+   ========================================================================== */
+
+.workspace {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding-top: clamp(10px, 2.4vw, 26px);
+  padding-bottom: calc(clamp(18px, 4vw, 42px) + var(--safe-b));
+  padding-left: max(clamp(8px, 2.2vw, 32px), var(--safe-l));
+  padding-right: max(clamp(8px, 2.2vw, 32px), var(--safe-r));
+}
+
+/* Contenedor de consulta del documento: las reglas responsive de la hoja
+   dependen de este ancho, no del viewport. */
+.sheet-scaler {
+  width: min(210mm, 100%);
+  container-type: inline-size;
+  container-name: sheet;
+}
+
+/* ==========================================================================
+   Escenario de exportación (siempre A4, invisible para la persona)
+   ========================================================================== */
+
+.pdf-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2400;
+  overflow: hidden;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.pdf-page {
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.pdf-page .sheet-scaler {
+  width: 210mm;
+}
+
+html.is-exporting {
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Diálogos
+   ========================================================================== */
+
+dialog.dialog {
+  width: calc(100% - 24px);
+  max-width: 460px;
+  max-height: min(88dvh, 720px);
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--ink);
+  overflow: visible;
+}
+
+dialog.dialog::backdrop {
+  background: rgba(10, 15, 20, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.dialog-card {
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-2);
+  padding: clamp(16px, 4vw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: min(88dvh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: clamp(17px, 4.4vw, 20px);
+  font-weight: 700;
+}
+
+.dialog-message {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+}
+
+.dialog-body {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.dialog-body ol {
+  margin: 6px 0 12px;
+  padding-left: 20px;
+}
+
+.dialog-body li {
+  margin-bottom: 4px;
+}
+
+.dialog-body strong {
+  color: var(--ink);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.dialog-actions .btn {
+  flex: 1 1 140px;
+}
+
+/* Historial */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 46dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.history-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.history-title {
+  font-weight: 700;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.history-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+.history-empty {
+  margin: 0;
+  padding: 18px 0;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+/* Mensaje personal */
+.dialog--love .dialog-card {
+  background: linear-gradient(150deg, #ffffff 0%, #fff1f5 100%);
+  border: 2px solid rgba(225, 29, 72, 0.28);
+  text-align: center;
+  align-items: center;
+  gap: 10px;
+  padding: clamp(22px, 6vw, 34px);
+}
+
+.love-heart {
+  font-size: clamp(44px, 12vw, 60px);
+  line-height: 1;
+  animation: heartbeat 1.25s ease-in-out infinite;
+}
+
+.love-title {
+  margin: 0;
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 900;
+  color: #881337;
+  line-height: 1.15;
+}
+
+.love-signature {
+  margin: 0;
+  font-size: clamp(13px, 3.6vw, 16px);
+  font-weight: 700;
+  color: #9f1239;
+}
+
+.love-close {
+  margin-top: 8px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #e11d48);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(225, 29, 72, 0.32);
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.14); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  60% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   Aviso flotante y overlay
+   ========================================================================== */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(18px + var(--safe-b));
+  transform: translate(-50%, 12px);
+  z-index: 3200;
+  max-width: min(440px, calc(100vw - 24px));
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #222b33;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.toast[data-type='success'] {
+  background: #24651a;
+}
+
+.toast[data-type='error'] {
+  background: #a52626;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #ffffff;
+  color: #2f4822;
+  font-weight: 700;
+  text-align: center;
+  padding: 24px;
+}
+
+.loading-overlay[hidden] {
+  display: none;
+}
+
+.spinner {
+  width: 46px;
+  height: 46px;
+  border: 4px solid #e3e8ec;
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Barra contextual de condiciones
+   ========================================================================== */
+
+.cond-toolbar {
+  position: fixed;
+  z-index: 900;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #222b33;
+  box-shadow: var(--shadow-2);
+}
+
+.cond-toolbar[hidden] {
+  display: none;
+}
+
+.ctb-btn {
+  min-width: 40px;
+  min-height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: #f1f5f8;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ctb-btn:hover,
+.ctb-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
+}
+
+.ctb-bold.is-active {
+  background: var(--green);
+  color: #fff;
+}
+
+.ctb-danger:hover {
+  background: rgba(212, 59, 59, 0.85);
+}
+
+/* Espejo invisible usado para medir el ancho de los campos en edición */
+.ed-mirror {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  white-space: pre;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Puntos de quiebre de la interfaz (no del documento)
+   ========================================================================== */
+
+@media (min-width: 400px) {
+  .app-brand-name { display: inline; }
+}
+
+@media (min-width: 520px) {
+  .save-text { display: inline; }
+}
+
+@media (min-width: 560px) {
+  .btn-label { display: inline; }
+  .btn-label-short { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* En impresión sólo existe el escenario A4 */
+@media print {
+  body > *:not(.pdf-stage) {
+    display: none !important;
+  }
+
+  .pdf-stage {
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  .pdf-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    break-after: page;
+  }
+
+  .pdf-page:last-child {
+    break-after: auto;
+  }
+}
