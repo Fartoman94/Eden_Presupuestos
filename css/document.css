@@ -712,8 +712,13 @@ input[type='date'].ed-input {
 
   /* Zonas de toque más generosas cuando se edita con el dedo */
   .ed {
-    padding: 0.28em 0.24em;
-    margin: 0 -0.24em;
+    padding: 0.42em 0.26em;
+    margin: 0 -0.26em;
+  }
+
+  /* Safari en iOS hace zoom si el control mide menos de 16px */
+  .ed-input {
+    font-size: max(16px, 1em);
   }
 
   .ed--fill,
@@ -721,6 +726,14 @@ input[type='date'].ed-input {
     min-height: 38px;
     padding: 0.4em 0.35em;
     margin: 0 -0.35em;
+  }
+
+  /* Los datos chicos necesitan su propia holgura para tocarlos cómodos */
+  .doc-metabar .ed,
+  .doc-client .ed,
+  .cell-label .ed--rate {
+    padding: 0.62em 0.34em;
+    margin: 0 -0.34em;
   }
 
   .doc-add {
