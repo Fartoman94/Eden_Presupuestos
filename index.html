@@ -1,366 +1,158 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="claro">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#6abf2e">
-  <meta name="application-name" content="Presupuesto Eden">
+  <meta name="description" content="Generador de presupuestos de Eden Viajes y Turismo. Editá el presupuesto directamente y descargalo en PDF A4.">
+  <meta name="application-name" content="Eden Presupuestos">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Presupuesto Eden">
+  <meta name="apple-mobile-web-app-title" content="Eden Presupuestos">
+  <title>Eden Presupuestos</title>
+
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <title>Generador de Presupuestos - Eden Viajes y Turismo</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="preload" as="image" href="./assets/header-clean.png">
+  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/document.css">
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGACIÓN PRINCIPAL -->
-  <nav class="app-nav">
-    <div class="nav-container">
-      <div class="nav-brand">
-        <span class="brand-badge">EDEN</span>
-        <div>
-          <span class="brand-title">Presupuestos</span>
-          <span class="brand-subtitle">Eden Viajes y Turismo SRL</span>
-        </div>
+  <a class="skip-link" href="#docSheet">Ir al presupuesto</a>
+
+  <!-- BARRA SUPERIOR: sólo lo imprescindible -->
+  <header class="app-bar">
+    <div class="app-bar-inner">
+      <div class="app-brand">
+        <span class="app-brand-mark">EDEN</span>
+        <span class="app-brand-name">Presupuestos</span>
       </div>
-      <div class="nav-actions">
-        <button id="btnOpenHistory" class="btn btn-secondary btn-sm" type="button" title="Ver presupuestos guardados">
-          📂 Historial
+
+      <div id="saveStatus" class="save-status" data-state="idle" role="status" aria-live="polite">
+        <span class="save-dot" aria-hidden="true"></span>
+        <span class="save-text">Guardado</span>
+      </div>
+
+      <div class="app-actions">
+        <button id="btnNew" type="button" class="btn btn-ghost" aria-label="Nuevo presupuesto" title="Nuevo presupuesto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/>
+          </svg>
+          <span class="btn-label">Nuevo</span>
         </button>
-        <button class="btn btn-secondary btn-sm btn-new-budget" type="button" title="Crear nuevo presupuesto">
-          ✨ Nuevo
+
+        <button id="btnPdf" type="button" class="btn btn-primary" title="Descargar PDF A4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/>
+          </svg>
+          <span class="btn-label">Descargar PDF</span>
+          <span class="btn-label-short">PDF</span>
         </button>
-        <button id="btnInstallApp" class="btn btn-dark btn-sm" type="button" onclick="instalarApp()" hidden>
-          ▣ Instalar App
-        </button>
-        <button id="btnThemeToggle" class="btn btn-secondary btn-sm" type="button" title="Alternar fondo blanco o negro">
-          🌙 Tema
-        </button>
-        <button class="btn btn-primary btn-sm btn-download-pdf" type="button">
-          📥 Descargar PDF
+
+        <button id="btnMenu" type="button" class="btn btn-icon" aria-haspopup="true" aria-expanded="false" aria-controls="appMenu" aria-label="Más opciones">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/>
+          </svg>
         </button>
       </div>
     </div>
-  </nav>
 
-  <!-- PESTAÑAS PARA CELULARES Y TABLETS -->
-  <div class="mobile-tabs">
-    <button type="button" class="tab-btn active" data-tab="editor">
-      ✏️ Editor
-    </button>
-    <button type="button" class="tab-btn" data-tab="preview">
-      👁️ Vista Previa A4
-    </button>
+    <div id="appMenu" class="app-menu" role="menu" hidden>
+      <button id="menuHistory" type="button" class="menu-item" role="menuitem">Presupuestos guardados</button>
+      <button id="menuShare" type="button" class="menu-item" role="menuitem">Compartir por WhatsApp</button>
+      <button id="menuPrint" type="button" class="menu-item" role="menuitem">Imprimir</button>
+      <button id="menuCurrency" type="button" class="menu-item" role="menuitem">
+        Moneda <span class="menu-value">Pesos ($)</span>
+      </button>
+      <button id="menuTheme" type="button" class="menu-item" role="menuitem">
+        Fondo <span class="menu-value">Claro</span>
+      </button>
+      <button id="menuInstall" type="button" class="menu-item" role="menuitem" hidden>Instalar aplicación</button>
+      <button id="menuLove" type="button" class="menu-item" role="menuitem">Mensaje ❤</button>
+    </div>
+  </header>
+
+  <!-- AYUDA DE PRIMERA VEZ (se muestra una sola vez) -->
+  <div id="editHint" class="edit-hint" hidden>
+    <p>Hacé clic o tocá cualquier dato del presupuesto para editarlo.</p>
+    <button type="button" data-role="close" aria-label="Entendido">✕</button>
   </div>
 
-  <!-- CONTENEDOR PRINCIPAL -->
-  <main class="main-wrapper">
-
-    <!-- PANEL IZQUIERDO: FORMULARIO EDITOR -->
-    <section class="editor-panel">
-
-      <!-- TARJETA 1: DATOS GENERALES -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📅 Datos del Presupuesto</span>
-          <button id="btnFechaHoy" type="button" class="btn btn-secondary btn-sm">📅 Hoy</button>
-        </div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label class="form-label" for="inputFecha">Fecha de Emisión</label>
-            <input id="inputFecha" type="text" class="form-input" placeholder="DD/MM/AAAA">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inputNumero">N° de Presupuesto (Opcional)</label>
-            <input id="inputNumero" type="text" class="form-input" placeholder="Ej: 001-2026">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inputCliente">Cliente / Pasajero</label>
-            <input id="inputCliente" type="text" class="form-input" placeholder="Nombre o Institución">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inputDestino">Destino / Recorrido</label>
-            <input id="inputDestino" type="text" class="form-input" placeholder="Ej: Bariloche / San Martín">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="selectMoneda">Moneda</label>
-            <select id="selectMoneda" class="form-select">
-              <option value="$">Pesos Argentinos ($ ARS)</option>
-              <option value="USD">Dólares Estadounidenses (USD)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inputValidez">Plazo de Validez</label>
-            <input id="inputValidez" type="text" class="form-input" placeholder="Válido por 7 días...">
-          </div>
-        </div>
-      </div>
-
-      <!-- TARJETA 2: SERVICIOS Y PRECIOS (DINÁMICOS) -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">🚍 Renglones / Servicios</span>
-          <button id="btnAddItem" type="button" class="btn btn-primary btn-sm">+ Agregar Renglón</button>
-        </div>
-        
-        <div id="itemsList" class="items-container">
-          <!-- Los renglones se renderizan dinámicamente -->
-        </div>
-
-        <!-- TOTALES GLOBALES -->
-        <div class="totals-summary">
-          <div class="total-row">
-            <span>Subtotal Neto:</span>
-            <strong id="editorSubtotal">$ 0,00</strong>
-          </div>
-          <div class="total-row">
-            <span>IVA Total:</span>
-            <strong id="editorIVA">$ 0,00</strong>
-          </div>
-          <div class="total-row grand-total">
-            <span>TOTAL FINAL:</span>
-            <strong id="editorTotalFinal">$ 0,00</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- TARJETA 3: CONDICIONES COMERCIALES -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">📋 Condiciones del Servicio</span>
-          <button id="btnAddCondition" type="button" class="btn btn-secondary btn-sm">+ Agregar Condición</button>
-        </div>
-
-        <div id="conditionsList" class="conditions-list">
-          <!-- Condiciones dinámicas -->
-        </div>
-
-        <!-- Plantillas rápidas sugeridas -->
-        <div class="quick-templates-wrap">
-          <span class="form-label">Plantillas frecuentes de condiciones:</span>
-          <div class="template-chips">
-            <button type="button" class="chip-btn" data-template="El servicio se seña con el 30% del valor total." data-bold="false">+ Seña 30%</button>
-            <button type="button" class="chip-btn" data-template="Este valor está sujeto a incrementos hasta 5 días antes de la salida de no haber cancelado la totalidad." data-bold="false">+ Ajuste de tarifa</button>
-            <button type="button" class="chip-btn" data-template="Viáticos y alojamiento del chofer a cargo del contratante." data-bold="false">+ Viáticos chofer</button>
-            <button type="button" class="chip-btn" data-template="El IVA será contemplado en caso de solicitar facturación o abonar mediante transferencia bancaria." data-bold="true">+ Condición IVA (Negrita)</button>
-            <button type="button" class="chip-btn" data-template="No incluye entradas a parques ni peajes no especificados." data-bold="false">+ Sin entradas/peajes</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TARJETA 4: ACCIONES -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">⚡ Acciones y Guardado</span>
-        </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <button type="button" class="btn btn-primary btn-lg btn-download-pdf" style="flex: 1;">
-            📥 Descargar PDF A4
-          </button>
-          <button type="button" class="btn btn-whatsapp btn-lg btn-share-whatsapp" style="flex: 1;">
-            💬 WhatsApp
-          </button>
-        </div>
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-          <button id="btnSaveHistory" type="button" class="btn btn-secondary" style="flex: 1;">
-            💾 Guardar en Historial
-          </button>
-          <button type="button" class="btn btn-secondary btn-print-native" style="flex: 1;">
-            🖨️ Imprimir Nativo
-          </button>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- PANEL DERECHO: VISTA PREVIA HOJA A4 -->
-    <section class="preview-panel tab-hidden">
-
-      <div class="preview-controls">
-        <span class="preview-hint">
-          📄 Vista Previa A4 (Fiel al documento impreso)
-        </span>
-        <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn btn-primary btn-sm btn-download-pdf">
-            📥 Descargar PDF
-          </button>
-          <button type="button" class="btn btn-whatsapp btn-sm btn-share-whatsapp">
-            💬 WhatsApp
-          </button>
-        </div>
-      </div>
-
-      <!-- VIEWPORT DE LA HOJA A4 -->
-      <div class="a4-viewport">
-        
-        <!-- CONTENEDOR EXACTO A4 (210mm x 297mm) -->
-        <article id="presupuestoA4">
-
-          <!-- ENCABEZADO: IMAGEN OFICIAL + DATOS DE CONTACTO SUPERPUESTOS -->
-          <header class="a4-header">
-            <img class="a4-header-img" src="./assets/header.png" alt="Eden Viajes y Turismo">
-            
-            <div class="a4-contact-overlay" aria-label="Datos de contacto">
-              <div class="a4-contact-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="1"></rect><path d="m3 7 9 6 9-6"></path></svg>
-                <span>Eden.turismo.srl@gmail.com</span>
-              </div>
-              <div class="a4-contact-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"></rect><path d="M9 5h6M11 19h2"></path></svg>
-                <span>2994135341 - 2996326712</span>
-              </div>
-              <div class="a4-contact-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"></path></svg>
-                <span>www.edenturismosrl.com</span>
-              </div>
-              <div class="a4-contact-row">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>
-                <span>Centenario, Neuquén</span>
-              </div>
-            </div>
-          </header>
-
-          <!-- CUERPO DE LA HOJA -->
-          <div class="a4-body">
-            <!-- MARCA DE AGUA CENTRADA -->
-            <img class="a4-watermark" src="./assets/watermark.png" alt="Marca de agua Eden">
-
-            <div class="a4-content">
-              <h1 class="a4-title">PRESUPUESTO</h1>
-
-              <!-- FECHA Y METADATOS -->
-              <div class="a4-meta-row">
-                <div class="a4-date-wrapper">
-                  Fecha:&nbsp;<span id="a4Fecha">01/09/2026</span>
-                </div>
-                <div id="a4ClientWrapper" class="a4-client-info" style="display: none;"></div>
-              </div>
-
-              <!-- TABLA DE PRECIOS -->
-              <table class="a4-table">
-                <colgroup>
-                  <col class="col-desc">
-                  <col class="col-neto">
-                  <col class="col-iva">
-                  <col class="col-tot">
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th>Descripción</th>
-                    <th class="text-right">Precio neto</th>
-                    <th class="text-right">IVA</th>
-                    <th class="text-right">Total final</th>
-                  </tr>
-                </thead>
-                <tbody id="a4TableBody">
-                  <!-- Filas dinámicas -->
-                </tbody>
-              </table>
-
-              <!-- CONDICIONES -->
-              <div class="a4-conditions-wrap">
-                <ul id="a4ConditionsList" class="a4-conditions-list">
-                  <!-- Lista dinámica -->
-                </ul>
-              </div>
-
-              <!-- VALIDEZ -->
-              <div id="a4Validity" class="a4-validity">
-                Presupuesto válido por 7 días a partir de la fecha de emisión.
-              </div>
-            </div>
-          </div>
-
-          <!-- PIE DE PÁGINA -->
-          <footer class="a4-footer">
-            <img src="./assets/footer.png" alt="Pie de página Eden">
-          </footer>
-
-        </article>
-
-      </div>
-
-    </section>
-
+  <!-- EL PRESUPUESTO ES EL EDITOR -->
+  <main class="workspace">
+    <div class="sheet-scaler">
+      <article id="docSheet" class="sheet" aria-label="Presupuesto de Eden Viajes y Turismo"></article>
+    </div>
   </main>
 
-  <!-- BARRA FLOTANTE DE ACCIÓN MÓVIL (BOTTOM BAR) -->
-  <div class="mobile-action-bar">
-    <button type="button" class="btn btn-primary btn-lg btn-download-pdf" style="flex: 2;">
-      📥 Descargar PDF
-    </button>
-    <button type="button" class="btn btn-whatsapp btn-lg btn-share-whatsapp" style="flex: 1;">
-      💬 WhatsApp
-    </button>
-  </div>
-
-  <!-- =========================================================================
-       MODALES Y NOTIFICACIONES
-       ========================================================================= -->
-
-  <!-- MODAL DE MENSAJE DE AMOR (1 VEZ CADA 7 DÍAS) -->
-  <div id="loveModal" class="modal-backdrop" role="dialog" aria-modal="true" hidden>
-    <div class="modal-card love-card">
-      <span class="love-heart">❤️</span>
-      <h2 class="love-title">TE AMO NAICHU<br>HERMOSA MÍA</h2>
-      <p class="love-signature">ATTE.: YO, TU PAPI RICO FA</p>
-      <button class="love-close" type="button" onclick="cerrarMensajeAmor()" aria-label="Cerrar mensaje" title="Cerrar mensaje">❤️</button>
-    </div>
-  </div>
-
-  <!-- MODAL DE HISTORIAL DE PRESUPUESTOS -->
-  <div id="historyModal" class="modal-backdrop" role="dialog" aria-modal="true" hidden>
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title">📂 Presupuestos Guardados</h3>
-        <button id="btnHistoryClose" class="modal-close-btn" type="button">✕</button>
-      </div>
-      <div id="historyList" style="max-height: 60vh; overflow-y: auto;">
-        <!-- Lista de historial -->
+  <!-- DIÁLOGOS -->
+  <dialog id="confirmDialog" class="dialog" aria-labelledby="confirmTitle">
+    <div class="dialog-card">
+      <h2 id="confirmTitle" class="dialog-title">Confirmar</h2>
+      <p class="dialog-message"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-role="cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" data-role="confirm">Confirmar</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
-  <!-- MODAL DE AYUDA DE INSTALACIÓN PWA -->
-  <div id="installHelpModal" class="modal-backdrop" role="dialog" aria-modal="true" hidden>
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title">📲 Instalar como Aplicación</h3>
-        <button class="modal-close-btn" type="button" onclick="cerrarAyudaInstalacion()">✕</button>
+  <dialog id="historyDialog" class="dialog" aria-labelledby="historyTitle">
+    <div class="dialog-card">
+      <div class="dialog-head">
+        <h2 id="historyTitle" class="dialog-title">Presupuestos guardados</h2>
+        <button type="button" class="btn btn-icon btn-sm" data-role="close" aria-label="Cerrar">✕</button>
       </div>
-      <div style="font-size: 13.5px; line-height: 1.5; color: #374151;">
-        <p><strong>En iPhone / iPad (Safari):</strong></p>
-        <ol style="margin: 8px 0 14px 20px;">
-          <li>Tocá el botón <strong>Compartir</strong> (icono de cuadrado con flecha).</li>
+      <div class="history-list"></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-role="close">Cerrar</button>
+        <button type="button" class="btn btn-primary" data-role="save-current">Guardar el actual</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="installDialog" class="dialog" aria-labelledby="installTitle">
+    <div class="dialog-card">
+      <div class="dialog-head">
+        <h2 id="installTitle" class="dialog-title">Instalar la aplicación</h2>
+        <button type="button" class="btn btn-icon btn-sm" data-role="close" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="dialog-body">
+        <p><strong>iPhone / iPad (Safari)</strong></p>
+        <ol>
+          <li>Tocá el botón <strong>Compartir</strong>.</li>
           <li>Elegí <strong>Agregar a pantalla de inicio</strong>.</li>
           <li>Confirmá tocando <strong>Agregar</strong>.</li>
         </ol>
-        <p><strong>En Android (Chrome / Edge):</strong></p>
-        <ol style="margin: 8px 0 14px 20px;">
-          <li>Abrí el menú de 3 puntos del navegador.</li>
-          <li>Seleccioná <strong>Instalar aplicación</strong> o <strong>Agregar a pantalla principal</strong>.</li>
+        <p><strong>Android (Chrome / Edge)</strong></p>
+        <ol>
+          <li>Abrí el menú de tres puntos del navegador.</li>
+          <li>Elegí <strong>Instalar aplicación</strong>.</li>
         </ol>
       </div>
-      <button class="btn btn-primary" type="button" style="width: 100%; margin-top: 14px;" onclick="cerrarAyudaInstalacion()">
-        Entendido
-      </button>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-primary" data-role="close">Entendido</button>
+      </div>
     </div>
-  </div>
+  </dialog>
 
-  <!-- SPINNER DE CARGA AL GENERAR PDF -->
+  <dialog id="loveDialog" class="dialog dialog--love" aria-labelledby="loveTitle">
+    <div class="dialog-card">
+      <span class="love-heart" aria-hidden="true">❤️</span>
+      <h2 id="loveTitle" class="love-title">TE AMO NAICHU<br>HERMOSA MÍA</h2>
+      <p class="love-signature">ATTE.: YO, TU PAPI RICO FA</p>
+      <button type="button" class="love-close" data-role="close" aria-label="Cerrar mensaje">❤️</button>
+    </div>
+  </dialog>
+
   <div id="loadingOverlay" class="loading-overlay" hidden>
-    <div class="spinner"></div>
-    <div style="font-weight: 700; color: #2f4822; font-size: 15px;">Generando documento PDF en alta calidad...</div>
+    <div class="spinner" role="progressbar" aria-label="Generando PDF"></div>
+    <p>Generando el PDF A4…</p>
   </div>
 
-  <!-- TOAST DE NOTIFICACIÓN -->
-  <div id="toastMsg" class="toast-msg" hidden></div>
-
-  <!-- SCRIPTS -->
   <script src="./libs/html2pdf.bundle.min.js"></script>
-  <script src="./app.js"></script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>

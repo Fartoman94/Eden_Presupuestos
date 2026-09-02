@@ -1,13 +1,28 @@
-const CACHE_NAME = 'eden-presupuesto-v2';
+const CACHE_NAME = 'eden-presupuesto-v3';
 
 const APP_SHELL = [
   './',
   './index.html',
-  './styles.css',
-  './app.js',
   './manifest.webmanifest',
+  './css/app.css',
+  './css/document.css',
+  './js/app.js',
+  './js/state.js',
+  './js/format.js',
+  './js/calc.js',
+  './js/validation.js',
+  './js/editable.js',
+  './js/document.js',
+  './js/toolbar.js',
+  './js/pdf.js',
+  './js/ui.js',
+  './js/history.js',
+  './js/share.js',
+  './js/love.js',
+  './js/pwa.js',
   './libs/html2pdf.bundle.min.js',
-  './assets/header.png',
+  './assets/header-clean.png',
+  './assets/logo.png',
   './assets/watermark.png',
   './assets/footer.png',
   './icons/icon-192.png',
@@ -16,20 +31,16 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    ))
   );
   self.clients.claim();
 });
@@ -37,10 +48,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  const requestURL = new URL(event.request.url);
-  if (requestURL.origin !== self.location.origin) return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
 
-  // Navegación (HTML): Network first con fallback a caché
+  // Navegación: red primero, caché como respaldo offline.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -54,29 +65,26 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Recursos estáticos: Cache first con actualización en segundo plano
+  // Estáticos: caché primero con actualización en segundo plano.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Actualizar en segundo plano
+    caches.match(event.request).then((cached) => {
+      if (cached) {
         fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const copy = networkResponse.clone();
+          .then((response) => {
+            if (response && response.status === 200) {
+              const copy = response.clone();
               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
             }
           })
           .catch(() => {});
-        return cachedResponse;
+        return cached;
       }
 
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
-        }
-        const copy = networkResponse.clone();
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
+        const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        return networkResponse;
+        return response;
       });
     })
   );
