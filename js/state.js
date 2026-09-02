@@ -156,6 +156,10 @@ export function normalizeBudget(raw) {
     ? raw.items.map(normalizeItem)
     : [createItem()];
 
+  // El modelo viejo guardaba un destino suelto, fuera de los renglones.
+  const destinoSuelto = str(raw.destino).trim();
+  if (destinoSuelto && !items[0].destino) items[0].destino = destinoSuelto;
+
   const condiciones = Array.isArray(raw.condiciones)
     ? raw.condiciones.map(normalizeCondition)
     : fallback.condiciones;

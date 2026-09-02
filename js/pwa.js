@@ -45,10 +45,12 @@ export function initPWA({ installButton }) {
     toast('Aplicación instalada', 'success');
   });
 
-  if ('serviceWorker' in navigator &&
-      (location.protocol === 'https:' || location.hostname === 'localhost')) {
-    window.addEventListener('load', () => {
+  // `isSecureContext` cubre https y también las pruebas locales por IP.
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    const register = () => {
       navigator.serviceWorker.register('./sw.js').catch(() => { /* sin offline */ });
-    });
+    };
+    if (document.readyState === 'complete') register();
+    else window.addEventListener('load', register, { once: true });
   }
 }
