@@ -47,6 +47,46 @@ if (window.visualViewport) {
   });
 }
 
+/**
+ * Un toque que empieza y termina sobre el mismo campo abre la edición, aunque
+ * el documento se haya reacomodado en el medio: al confirmar el campo anterior
+ * el texto cambia de ancho y el navegador termina disparando el `click` sobre
+ * un ancestro común en vez del campo tocado.
+ */
+let pointerStart = null;
+
+function editableFrom(node) {
+  return node && node.closest ? node.closest(EDITABLE_SELECTOR) : null;
+}
+
+function withinReach(el, event) {
+  const rect = el.getBoundingClientRect();
+  const slack = 20;
+  return (
+    event.clientX >= rect.left - slack &&
+    event.clientX <= rect.right + slack &&
+    event.clientY >= rect.top - slack &&
+    event.clientY <= rect.bottom + slack
+  );
+}
+
+document.addEventListener('pointerdown', (event) => {
+  const target = editableFrom(event.target);
+  pointerStart = target ? { target, x: event.clientX, y: event.clientY } : null;
+}, true);
+
+document.addEventListener('click', (event) => {
+  const start = pointerStart;
+  pointerStart = null;
+
+  let target = editableFrom(event.target);
+  if (!target && start && start.target.isConnected && withinReach(start.target, event)) {
+    target = start.target;
+  }
+  if (!target || typeof target.beginEdit !== 'function' || target.isEditing()) return;
+  target.beginEdit();
+}, true);
+
 function editablesInOrder(root) {
   const scope = root || document;
   return Array.from(scope.querySelectorAll(EDITABLE_SELECTOR))
@@ -107,12 +147,21 @@ export function createEditable(config) {
   let editing = false;
   let cancelled = false;
   let input = null;
+  let painted = null;
+  let original = null;
+  let live = false;
 
   const display = () => (format ? format(get()) : String(get() == null ? '' : get()));
 
+  /**
+   * Sólo toca el DOM cuando el texto cambió. Repintar en cada actualización
+   * invalidaba el nodo que el dedo estaba tocando y encarecía cada tecla.
+   */
   function render() {
     if (editing) return;
     const text = display();
+    if (painted === text) return;
+    painted = text;
     el.textContent = '';
     const empty = text === '' || text == null;
     el.classList.toggle('is-empty', empty);
@@ -186,6 +235,9 @@ export function createEditable(config) {
     if (editing || el.dataset.locked === 'true') return;
     editing = true;
     cancelled = false;
+    painted = null;
+    live = false;
+    original = get();
     activeEditable = el;
     el.classList.add('is-editing');
     el.classList.remove('has-error');
@@ -200,12 +252,14 @@ export function createEditable(config) {
       if (type === 'textarea' || type === 'text') commit({ keepEditing: true });
     });
     input.addEventListener('change', () => {
-      if (type === 'select') commit();
+      // Elegir del calendario o de la lista ya es la confirmación del dato.
+      if (type === 'select' || type === 'date') commit();
       else autosize();
     });
     input.addEventListener('blur', () => {
       if (cancelled) {
         cancelled = false;
+        revert();
         endEdit();
         return;
       }
@@ -234,12 +288,14 @@ export function createEditable(config) {
     if (event.key === 'Enter') {
       if (type === 'textarea' && event.shiftKey) return;
       event.preventDefault();
+      event.stopPropagation();
       commit();
       el.focus();
       return;
     }
     if (event.key === 'Tab') {
       event.preventDefault();
+      event.stopPropagation();
       commit();
       if (!focusAdjacent(el, event.shiftKey)) el.focus();
     }
@@ -254,6 +310,14 @@ export function createEditable(config) {
     el.dispatchEvent(new CustomEvent('ed:end', { bubbles: true, detail: { field } }));
   }
 
+  /** Deshace lo que se fue escribiendo en vivo cuando la edición se cancela. */
+  function revert() {
+    if (!live) return;
+    live = false;
+    set(original);
+    el.dispatchEvent(new CustomEvent('ed:change', { bubbles: true, detail: { field, value: original } }));
+  }
+
   /**
    * @param {{keepEditing?: boolean}} [opts] cuando es `true` sólo actualiza el
    * modelo (escritura en vivo) sin cerrar el editor.
@@ -263,18 +327,18 @@ export function createEditable(config) {
     const value = parse ? parse(input.value) : input.value;
     set(value);
     el.dispatchEvent(new CustomEvent('ed:change', { bubbles: true, detail: { field, value } }));
-    if (opts.keepEditing) return;
+    if (opts.keepEditing) {
+      live = true;
+      return;
+    }
+    live = false;
     endEdit();
   }
 
-  el.addEventListener('click', (event) => {
-    if (editing) return;
-    event.stopPropagation();
-    beginEdit();
-  });
-
   el.addEventListener('keydown', (event) => {
-    if (editing) return;
+    // El control quitado del DOM al confirmar sigue burbujeando su tecla: sin
+    // este filtro, el Enter que cierra la edición la volvería a abrir.
+    if (editing || event.target !== el) return;
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
       beginEdit();
