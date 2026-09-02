@@ -775,5 +775,10 @@ dialog.dialog::backdrop {
   .pdf-page {
     width: 210mm !important;
     height: 297mm !important;
+    break-after: page;
+  }
+
+  .pdf-page:last-child {
+    break-after: auto;
   }
 }

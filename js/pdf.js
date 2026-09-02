@@ -8,10 +8,11 @@
  * dispositivo desde el que se exporte.
  */
 
-import { fitToPage } from './document.js';
+import { fitToPage, overflowsPage } from './document.js';
 import { formatDateShort } from './format.js';
 
 const STAGE_ID = 'pdfStage';
+const MAX_PAGES = 12;
 
 function removeEmptyClauses(clone) {
   clone.querySelectorAll('.doc-clause').forEach((node) => {
@@ -35,6 +36,21 @@ function removeEmptyClauses(clone) {
   }
 }
 
+/**
+ * Copia el tamaño real de cada imagen al clon. Sin esto la copia se mide con
+ * las imágenes todavía sin cargar, el alto del encabezado y del pie da cero y
+ * el reparto en hojas sale mal.
+ */
+function copyImageSizes(source, clone) {
+  const originals = source.querySelectorAll('img');
+  clone.querySelectorAll('img').forEach((img, index) => {
+    const original = originals[index];
+    if (!original || !original.naturalWidth) return;
+    img.setAttribute('width', String(original.naturalWidth));
+    img.setAttribute('height', String(original.naturalHeight));
+  });
+}
+
 function cleanClone(clone) {
   clone.querySelectorAll('.only-screen').forEach((node) => node.remove());
   removeEmptyClauses(clone);
@@ -52,12 +68,124 @@ export function removeStage() {
   document.documentElement.classList.remove('is-exporting');
 }
 
+/* ------------------------------------------------------------------ */
+/* Reparto en hojas                                                    */
+/* ------------------------------------------------------------------ */
+
+const mainOf = (sheet) => sheet.querySelector('.doc-main');
+
+/** Hoja nueva con el mismo marco (encabezado, marca de agua y pie) y sin cuerpo. */
+function blankSheetFrom(sheet) {
+  const clone = sheet.cloneNode(true);
+  mainOf(clone).textContent = '';
+  return clone;
+}
+
+/** Copia el armazón de la tabla (columnas y encabezado) sin renglones. */
+function emptyTableFrom(wrap) {
+  const copy = wrap.cloneNode(false);
+  const table = wrap.querySelector('table');
+  const clone = table.cloneNode(false);
+
+  const colgroup = table.querySelector('colgroup');
+  if (colgroup) clone.appendChild(colgroup.cloneNode(true));
+  const thead = table.querySelector('thead');
+  if (thead) clone.appendChild(thead.cloneNode(true));
+  clone.appendChild(document.createElement('tbody'));
+
+  // El total general acompaña al último tramo de la tabla.
+  const tfoot = table.querySelector('tfoot');
+  if (tfoot) clone.appendChild(tfoot);
+
+  copy.appendChild(clone);
+  return copy;
+}
+
+/**
+ * Pasa a `target` el último bloque de `source` que se pueda separar: primero la
+ * vigencia, después las condiciones de a una y por último los renglones.
+ * @returns {boolean} si movió algo
+ */
+function moveLastBlock(source, target) {
+  const from = mainOf(source);
+  const to = mainOf(target);
+  const last = from.lastElementChild;
+  if (!last) return false;
+
+  if (last.classList.contains('doc-conditions')) {
+    const list = last.querySelector('.cond-list');
+    if (list && list.children.length) {
+      let section = to.querySelector('.doc-conditions');
+      if (!section) {
+        section = last.cloneNode(false);
+        section.appendChild(list.cloneNode(false));
+        to.insertBefore(section, to.firstChild);
+      }
+      const destino = section.querySelector('.cond-list');
+      destino.insertBefore(list.lastElementChild, destino.firstChild);
+      if (!list.children.length) last.remove();
+      return true;
+    }
+  }
+
+  if (last.classList.contains('doc-table-wrap')) {
+    const tbody = last.querySelector('tbody');
+    if (tbody && tbody.children.length) {
+      let wrap = to.querySelector('.doc-table-wrap');
+      if (!wrap) {
+        wrap = emptyTableFrom(last);
+        to.insertBefore(wrap, to.firstChild);
+      }
+      const destino = wrap.querySelector('tbody');
+      destino.insertBefore(tbody.lastElementChild, destino.firstChild);
+      if (!tbody.children.length) last.remove();
+      return true;
+    }
+  }
+
+  // Mudar el bloque entero a una hoja vacía no achica nada: quedaría igual.
+  if (from.children.length === 1 && !to.children.length) return false;
+
+  to.insertBefore(last, to.firstChild);
+  return true;
+}
+
+/**
+ * Reparte el documento en tantas hojas A4 como haga falta. Cada hoja repite el
+ * encabezado y el pie, así que las siguientes siguen siendo el mismo documento
+ * comercial.
+ * @returns {HTMLElement[]} las hojas, en orden
+ */
+function paginate({ addPage, dropPage }, first) {
+  const sheets = [first];
+  let current = first;
+  let guard = 0;
+
+  while (overflowsPage(current) && guard < MAX_PAGES) {
+    guard += 1;
+    const next = blankSheetFrom(first);
+    const page = addPage(next);
+
+    let moved = false;
+    while (overflowsPage(current) && moveLastBlock(current, next)) moved = true;
+    if (!moved) {
+      dropPage(page);
+      break;
+    }
+
+    sheets.push(next);
+    current = next;
+  }
+
+  return sheets;
+}
+
 /**
  * Monta la copia A4 lista para capturar o imprimir.
- * La estructura repite la de la pantalla (`.sheet-scaler` > `.sheet`) porque el
- * contenedor de consulta tiene que viajar con la copia: html2pdf reparenta el
- * nodo que recibe, y sin ese contenedor la hoja perdería su escala.
- * @returns {{stage: HTMLElement, page: HTMLElement, sheet: HTMLElement}}
+ * Cada hoja repite la estructura de la pantalla (`.sheet-scaler` > `.sheet`)
+ * porque el contenedor de consulta tiene que viajar con la copia: html2pdf
+ * reparenta el nodo que recibe, y sin ese contenedor la hoja perdería su escala.
+ * @returns {{stage: HTMLElement, pages: HTMLElement[], sheets: HTMLElement[]}}
  */
 export function buildStage(sheet) {
   removeStage();
@@ -67,25 +195,47 @@ export function buildStage(sheet) {
   stage.className = 'pdf-stage';
   stage.setAttribute('aria-hidden', 'true');
 
-  const page = document.createElement('div');
-  page.className = 'pdf-page';
-
-  const scaler = document.createElement('div');
-  scaler.className = 'sheet-scaler';
+  const pages = [];
+  const addPage = (hoja) => {
+    const page = document.createElement('div');
+    page.className = 'pdf-page';
+    const scaler = document.createElement('div');
+    scaler.className = 'sheet-scaler';
+    scaler.appendChild(hoja);
+    page.appendChild(scaler);
+    stage.appendChild(page);
+    pages.push(page);
+    return page;
+  };
+  const dropPage = (page) => {
+    const index = pages.indexOf(page);
+    if (index >= 0) pages.splice(index, 1);
+    page.remove();
+  };
 
   const clone = sheet.cloneNode(true);
   clone.removeAttribute('id');
   clone.classList.add('pdf-mode');
+  copyImageSizes(sheet, clone);
   cleanClone(clone);
 
-  scaler.appendChild(clone);
-  page.appendChild(scaler);
-  stage.appendChild(page);
+  addPage(clone);
   document.body.appendChild(stage);
   document.documentElement.classList.add('is-exporting');
 
   fitToPage(clone);
-  return { stage, page, sheet: clone };
+  // En el papel la hoja nunca crece: lo que sobra pasa a la hoja siguiente.
+  if (clone.classList.contains('is-overflowing')) {
+    // Achicar la letra sólo vale la pena para ahorrar una hoja. Si igual hacen
+    // falta varias, el documento vuelve a su tamaño normal.
+    mainOf(clone).style.setProperty('--fit', '1');
+    clone.classList.remove('is-overflowing');
+  }
+
+  const sheets = paginate({ addPage, dropPage }, clone);
+  sheets.forEach((hoja, i) => { if (i) hoja.classList.remove('is-overflowing'); });
+
+  return { stage, pages, sheets };
 }
 
 export function buildFilename(budget) {
@@ -151,15 +301,34 @@ function pdfOptions(budget) {
   };
 }
 
+/**
+ * @returns {Promise<number>} cuántas hojas A4 salieron
+ */
 export async function exportPDF(sheet, budget) {
-  const { page } = buildStage(sheet);
+  const { stage, pages } = buildStage(sheet);
   try {
-    await waitForImages(page);
+    await waitForImages(stage);
     if (!window.html2pdf) throw new Error('html2pdf no disponible');
 
     const options = pdfOptions(budget);
-    const raw = await window.html2pdf().set(options).from(page).toCanvas().get('canvas');
-    await window.html2pdf().set(options).from(normalizeCanvas(raw), 'canvas').save();
+    const canvases = [];
+
+    // Se captura de a una hoja: así todas se dibujan en la misma posición.
+    for (const page of pages) {
+      pages.forEach((otra) => { otra.style.display = otra === page ? '' : 'none'; });
+      const raw = await window.html2pdf().set(options).from(page).toCanvas().get('canvas');
+      canvases.push(normalizeCanvas(raw));
+    }
+    pages.forEach((page) => { page.style.display = ''; });
+
+    const pdf = await window.html2pdf().set(options).from(canvases[0], 'canvas').toPdf().get('pdf');
+    canvases.slice(1).forEach((canvas) => {
+      pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', options.image.quality), 'JPEG', 0, 0, 210, 297);
+    });
+    pdf.save(options.filename);
+
+    return canvases.length;
   } finally {
     removeStage();
   }

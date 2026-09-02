@@ -131,6 +131,24 @@
   flex-direction: column;
 }
 
+/* Medición momentánea del documento sin sus ayudas de edición */
+.sheet.is-measuring .only-screen {
+  display: none;
+}
+
+/**
+ * Cuando el contenido no entra ni reducido, la hoja crece en pantalla en vez de
+ * esconder texto. El PDF, en cambio, se reparte en varias hojas A4.
+ */
+.sheet.is-overflowing {
+  height: auto;
+  min-height: calc(297 * var(--u));
+}
+
+.sheet.is-overflowing .doc-main {
+  overflow: visible;
+}
+
 .doc-foot {
   flex: none;
   line-height: 0;

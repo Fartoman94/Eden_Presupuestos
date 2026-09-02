@@ -126,8 +126,8 @@ async function downloadPDF() {
   autosave.flush();
   overlay.hidden = false;
   try {
-    await exportPDF(sheet, budget);
-    toast('PDF descargado', 'success');
+    const hojas = await exportPDF(sheet, budget);
+    toast(hojas > 1 ? `PDF descargado (${hojas} hojas A4)` : 'PDF descargado', 'success');
   } catch (err) {
     console.error('No se pudo generar el PDF', err);
     toast('No se pudo generar el PDF, probá con Imprimir', 'error', 5000);

@@ -601,23 +601,43 @@ export function createBudgetDocument({ root, getBudget, onChange }) {
   };
 }
 
+/** Por debajo de este factor el texto deja de leerse cómodo: mejor otra hoja. */
+const FIT_MIN = 0.75;
+
+export function overflowsPage(sheet) {
+  const main = sheet.querySelector('.doc-main');
+  return Boolean(main) && main.scrollHeight > main.clientHeight + 1;
+}
+
 /**
- * Reduce proporcionalmente el contenido para que entre en la hoja A4 sin
- * recortes. Sólo actúa cuando el documento se muestra a tamaño de página.
+ * Reduce proporcionalmente el contenido para que entre en la hoja A4. Si aun
+ * así no entra, la hoja crece en pantalla —nunca se recorta— y el PDF se
+ * reparte en varias páginas.
+ * Sólo actúa cuando el documento se muestra a tamaño de página.
+ * @returns {number} el factor aplicado
  */
 export function fitToPage(sheet) {
   const main = sheet.querySelector('.doc-main');
   if (!main) return 1;
+  sheet.classList.remove('is-overflowing');
   main.style.setProperty('--fit', '1');
 
   if (sheet.getBoundingClientRect().width < 700) return 1;
 
+  // La escala se calcula sobre el documento puro: los botones de edición no
+  // viajan al papel y no deberían achicar la letra del PDF.
+  sheet.classList.add('is-measuring');
   let fit = 1;
   let guard = 0;
-  while (main.scrollHeight > main.clientHeight + 1 && fit > 0.62 && guard < 24) {
+  while (overflowsPage(sheet) && fit > FIT_MIN && guard < 24) {
     fit = roundCents(fit - 0.03);
     main.style.setProperty('--fit', String(fit));
     guard += 1;
   }
+  sheet.classList.remove('is-measuring');
+
+  // Con los botones a la vista puede faltar lugar: la hoja crece antes que
+  // esconder nada.
+  if (overflowsPage(sheet)) sheet.classList.add('is-overflowing');
   return fit;
 }
