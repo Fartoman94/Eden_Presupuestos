@@ -693,8 +693,10 @@ input[type='date'].ed-input {
     border-top: 1px solid #e2e7eb;
   }
 
-  /* El selector de alícuota vive en la etiqueta de la tarjeta */
-  .cell-label .ed--rate {
+  /* El selector de alícuota vive en la etiqueta de la tarjeta, junto al "IVA" */
+  .doc-table td.cell-num .cell-label .ed--rate {
+    display: inline;
+    min-height: 0;
     color: #4d6a2a;
     text-decoration: underline dotted;
     text-underline-offset: 3px;
@@ -750,7 +752,7 @@ input[type='date'].ed-input {
   .doc-metabar .ed,
   .doc-client .ed,
   .cell-label .ed--rate {
-    padding: 0.62em 0.34em;
+    padding: 0.72em 0.34em;
     margin: 0 -0.34em;
   }
 
