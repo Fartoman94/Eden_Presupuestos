@@ -555,7 +555,7 @@ export function createBudgetDocument({ root, getBudget, onChange }) {
     // La marca de agua vive en la hoja completa (no en el cuerpo) para
     // quedar centrada en el medio del A4, tanto en pantalla como en el PDF.
     const watermark = el('img', 'doc-watermark');
-    watermark.src = './assets/watermark.png';
+    watermark.src = './assets/watermark-v2.png';
     watermark.alt = '';
     watermark.setAttribute('aria-hidden', 'true');
     root.appendChild(watermark);

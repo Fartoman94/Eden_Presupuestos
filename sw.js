@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eden-presupuesto-v3.2';
+const CACHE_NAME = 'eden-presupuesto-v3.3';
 
 const APP_SHELL = [
   './',
@@ -23,7 +23,7 @@ const APP_SHELL = [
   './libs/html2pdf.bundle.min.js',
   './assets/header-clean.png',
   './assets/logo.png',
-  './assets/watermark.png',
+  './assets/watermark-v2.png',
   './assets/footer.png',
   './icons/icon-192.png',
   './icons/icon-512.png'
