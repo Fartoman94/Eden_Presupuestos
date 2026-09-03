@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eden-presupuesto-v3';
+const CACHE_NAME = 'eden-presupuesto-v3.2';
 
 const APP_SHELL = [
   './',
