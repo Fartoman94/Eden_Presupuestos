@@ -42,6 +42,7 @@
 
 .doc-head {
   position: relative;
+  z-index: 1;
   flex: none;
   line-height: 0;
 }
@@ -98,6 +99,7 @@
 
 .doc-body {
   position: relative;
+  z-index: 1;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -107,11 +109,13 @@
 
 .doc-watermark {
   position: absolute;
-  top: 46%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 58%;
-  opacity: 0.055;
+  width: 46%;
+  max-width: 420px;
+  height: auto;
+  opacity: 0.09;
   z-index: 0;
   pointer-events: none;
   user-select: none;
@@ -150,6 +154,8 @@
 }
 
 .doc-foot {
+  position: relative;
+  z-index: 1;
   flex: none;
   line-height: 0;
 }
@@ -578,8 +584,8 @@ input[type='date'].ed-input {
   }
 
   .doc-watermark {
-    top: 42%;
-    width: 74%;
+    top: 50%;
+    width: min(64%, 280px);
   }
 
   .doc-titlebar {
