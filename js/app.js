@@ -11,7 +11,6 @@ import { markError, clearErrors, blurActiveEditable } from './editable.js';
 import { validateBudget } from './validation.js';
 import { attachPrintFallback, exportPDF, printDocument } from './pdf.js';
 import { initHistory } from './history.js';
-import { initLoveMessage } from './love.js';
 import { initPWA } from './pwa.js';
 import { shareBudget } from './share.js';
 import {
@@ -181,9 +180,6 @@ function applyTheme(theme) {
 menuTheme.addEventListener('click', () => {
   applyTheme(document.documentElement.dataset.theme === 'oscuro' ? 'claro' : 'oscuro');
 });
-
-const love = initLoveMessage();
-document.getElementById('menuLove').addEventListener('click', () => love.show());
 
 initPWA({ installButton: document.getElementById('menuInstall') });
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eden-presupuesto-v3.3';
+const CACHE_NAME = 'eden-presupuesto-v3.4';
 
 const APP_SHELL = [
   './',
@@ -18,7 +18,6 @@ const APP_SHELL = [
   './js/ui.js',
   './js/history.js',
   './js/share.js',
-  './js/love.js',
   './js/pwa.js',
   './libs/html2pdf.bundle.min.js',
   './assets/header-clean.png',
