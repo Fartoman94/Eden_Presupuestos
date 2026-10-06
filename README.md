@@ -50,7 +50,6 @@ El presupuesto **es** el editor: se abre la aplicación, se ve el documento term
 │   ├── ui.js                   # Avisos, diálogos e indicador de guardado
 │   ├── history.js              # Presupuestos guardados
 │   ├── share.js                # Resumen para WhatsApp
-│   ├── love.js                 # Mensaje personal
 │   └── pwa.js                  # Instalación y service worker
 ├── manifest.webmanifest        # Configuración PWA
 ├── sw.js                       # Service Worker (caché y offline)
